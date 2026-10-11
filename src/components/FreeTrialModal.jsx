@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import { X, Sparkles, CheckCircle2, QrCode, Dumbbell } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function FreeTrialModal({ onClose }) {
+  const { config } = useGymConfig();
+  const c = config || {};
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
@@ -49,7 +51,7 @@ export default function FreeTrialModal({ onClose }) {
                 100% Free &bull; Zero Commitment
               </span>
               <h3 className="text-2xl font-extrabold text-white font-heading mt-3">3-Day VIP Free Trial Pass</h3>
-              <p className="text-xs text-slate-400 mt-1">Experience full access to {GYM_CONFIG.GYM_NAME} in New Delhi</p>
+              <p className="text-xs text-slate-400 mt-1">Experience full access to {c.GYM_NAME || 'APEX 3D Gym'} in {c.LOCATION?.city || 'New Delhi'}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,12 +113,12 @@ export default function FreeTrialModal({ onClose }) {
                 VIP TRIAL PASS
               </div>
               <Dumbbell className="w-8 h-8 text-cyan-400 mb-2" />
-              <h4 className="text-lg font-bold text-white font-heading">{GYM_CONFIG.GYM_SHORT_NAME}</h4>
+              <h4 className="text-lg font-bold text-white font-heading">{c.GYM_SHORT_NAME || 'APEX 3D'}</h4>
               <p className="text-xs text-lime-400 font-mono">Pass Holder: {name || 'VIP Member'}</p>
               <div className="my-3 border-t border-white/10"></div>
               <div className="flex justify-between items-center text-[10px] font-mono text-slate-300">
                 <span>Valid: 3 Consecutive Days</span>
-                <span>City: New Delhi</span>
+                <span>City: {c.LOCATION?.city || 'New Delhi'}</span>
               </div>
             </div>
 

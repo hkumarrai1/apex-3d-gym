@@ -1,10 +1,12 @@
 import React from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import { UserCheck, Phone, Calendar, Award, Star, MessageSquare } from 'lucide-react';
 
 export default function OwnerTrainerSection({ onBookTrainer }) {
-  const owner = GYM_CONFIG.OWNER;
-  const trainers = GYM_CONFIG.TRAINERS;
+  const { config } = useGymConfig();
+  const owner = config.OWNER;
+  const trainers = config.TRAINERS || [];
+  const locationCity = config.LOCATION?.city || 'New Delhi';
 
   return (
     <section id="trainers" className="py-20 relative">
@@ -16,10 +18,10 @@ export default function OwnerTrainerSection({ onBookTrainer }) {
             <UserCheck className="w-4 h-4" /> Elite Leadership & Coaching Staff
           </div>
           <h2 className="text-3xl md:text-5xl font-extrabold font-heading text-white">
-            Meet the Masters Behind <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-lime-400">{GYM_CONFIG.GYM_SHORT_NAME}</span>
+            Meet the Masters Behind <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-lime-400">{config.GYM_SHORT_NAME}</span>
           </h2>
           <p className="text-slate-400 text-sm md:text-base">
-            Guided by founder Amrit Dwivedi and our team of 3 elite certified personal trainers in New Delhi.
+            Guided by founder {owner.name} and our team of elite certified personal trainers in {locationCity}.
           </p>
         </div>
 
@@ -39,8 +41,8 @@ export default function OwnerTrainerSection({ onBookTrainer }) {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-              <div className="absolute bottom-2 left-2 right-2 text-center text-[10px] font-mono text-cyan-400 bg-black/70 py-1 rounded-md">
-                AMRIT DWIVEDI &bull; FOUNDER
+              <div className="absolute bottom-2 left-2 right-2 text-center text-[10px] font-mono text-cyan-400 bg-black/70 py-1 rounded-md uppercase">
+                {owner.name} &bull; FOUNDER
               </div>
             </div>
 
@@ -56,7 +58,7 @@ export default function OwnerTrainerSection({ onBookTrainer }) {
               </p>
 
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-2">
-                {owner.certifications.map((cert, idx) => (
+                {owner.certifications?.map((cert, idx) => (
                   <span key={idx} className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-lime-400">
                     &bull; {cert}
                   </span>
@@ -66,7 +68,7 @@ export default function OwnerTrainerSection({ onBookTrainer }) {
               {/* Owner Action Buttons */}
               <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-4">
                 <a
-                  href={`https://wa.me/${owner.whatsapp}?text=Hi%20Amrit!%20I%20want%20to%20consult%20you%20regarding%20gym%20training.`}
+                  href={`https://wa.me/${owner.whatsapp}?text=Hi%20${encodeURIComponent(owner.name)}!%20I%20want%20to%20consult%20you%20regarding%20gym%20training.`}
                   target="_blank"
                   rel="noreferrer"
                   className="px-6 py-3 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-extrabold text-sm transition-all flex items-center gap-2 shadow-lg shadow-lime-400/20"
@@ -83,7 +85,7 @@ export default function OwnerTrainerSection({ onBookTrainer }) {
                   onClick={() => onBookTrainer(owner)}
                   className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-extrabold text-sm transition-all shadow-lg shadow-cyan-500/25 flex items-center gap-2"
                 >
-                  <Calendar className="w-4 h-4" /> Book Session with Amrit
+                  <Calendar className="w-4 h-4" /> Book Session with {owner.name.split(' ')[0]}
                 </button>
               </div>
 
@@ -92,11 +94,11 @@ export default function OwnerTrainerSection({ onBookTrainer }) {
           </div>
         </div>
 
-        {/* 3 TRAINERS GRID */}
+        {/* TRAINERS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {trainers.map((t) => (
             <div
-              key={t.id}
+              key={t.id || t.name}
               className="bg-gym-card/80 border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:border-cyan-500/50 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between"
             >
               <div>

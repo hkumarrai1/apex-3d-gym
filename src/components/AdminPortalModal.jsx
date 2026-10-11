@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import {
   X,
   Shield,
@@ -21,10 +21,19 @@ import {
   Database,
   Bot,
   LogOut,
-  Clock
+  Clock,
+  Settings,
+  Save,
+  RotateCcw,
+  MapPin,
+  Globe,
+  Award,
+  Image
 } from 'lucide-react';
 
 export default function AdminPortalModal({ onClose }) {
+  const { config: globalConfig, updateConfig, resetConfig, loading: configLoading } = useGymConfig();
+
   // Admin Auth State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     return sessionStorage.getItem('gym_admin_auth') === 'true';
@@ -42,6 +51,17 @@ export default function AdminPortalModal({ onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // CMS Brand Settings Form State
+  const [cmsForm, setCmsForm] = useState(globalConfig);
+  const [savingCms, setSavingCms] = useState(false);
+
+  // Keep cmsForm synced with globalConfig
+  useEffect(() => {
+    if (globalConfig) {
+      setCmsForm(globalConfig);
+    }
+  }, [globalConfig]);
+
   // Add Member Modal State
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
@@ -52,9 +72,16 @@ export default function AdminPortalModal({ onClose }) {
   const [newMemberEndDate, setNewMemberEndDate] = useState(
     new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
-  const [newMemberCoach, setNewMemberCoach] = useState('Amrit Dwivedi');
+  const [newMemberCoach, setNewMemberCoach] = useState('');
   const [sendWelcomeWhatsapp, setSendWelcomeWhatsapp] = useState(true);
   const [creatingMember, setCreatingMember] = useState(false);
+
+  // Set default coach to founder when cmsForm is loaded
+  useEffect(() => {
+    if (!newMemberCoach && cmsForm?.OWNER?.name) {
+      setNewMemberCoach(cmsForm.OWNER.name);
+    }
+  }, [cmsForm, newMemberCoach]);
 
   // Edit Member Dates State
   const [editingMember, setEditingMember] = useState(null);
@@ -274,6 +301,59 @@ export default function AdminPortalModal({ onClose }) {
     }
   };
 
+  // CMS Mutator Helpers
+  const updateCmsField = (field, value) => {
+    setCmsForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateCmsNested = (parent, field, value) => {
+    setCmsForm(prev => ({
+      ...prev,
+      [parent]: {
+        ...prev?.[parent],
+        [field]: value
+      }
+    }));
+  };
+
+  const updateTrainerField = (index, field, value) => {
+    setCmsForm(prev => {
+      const trainers = [...(prev?.TRAINERS || [])];
+      trainers[index] = { ...trainers[index], [field]: value };
+      return { ...prev, TRAINERS: trainers };
+    });
+  };
+
+  const handleSaveCmsConfig = async (e) => {
+    if (e) e.preventDefault();
+    setSavingCms(true);
+    try {
+      const res = await updateConfig(cmsForm);
+      if (res && res.success) {
+        alert("✅ Brand details, Founder, Trainers and Contacts saved! Updated across the entire website.");
+      } else {
+        alert("⚠️ Failed to update website settings: " + (res?.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert("Error saving settings: " + err.message);
+    } finally {
+      setSavingCms(false);
+    }
+  };
+
+  const handleResetCmsConfig = async () => {
+    if (!confirm("Are you sure you want to restore default brand settings?")) return;
+    setSavingCms(true);
+    try {
+      await resetConfig();
+      alert("🔄 Website brand settings restored to default!");
+    } catch (err) {
+      alert("Error resetting config: " + err.message);
+    } finally {
+      setSavingCms(false);
+    }
+  };
+
   const filteredMembers = members.filter(m => {
     const matchesSearch =
       m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -459,6 +539,17 @@ export default function AdminPortalModal({ onClose }) {
                   }`}
                 >
                   <Calendar className="w-4 h-4" /> Trainer Bookings & Trial Passes
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('cms')}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                    activeTab === 'cms'
+                      ? 'bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 text-white shadow-md shadow-fuchsia-500/30'
+                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" /> ⚙️ Brand & CMS Settings
                 </button>
               </div>
 
@@ -742,6 +833,445 @@ export default function AdminPortalModal({ onClose }) {
               </div>
             )}
 
+            {/* TAB 4: BRAND & SITE CMS SETTINGS */}
+            {activeTab === 'cms' && (
+              <div className="space-y-6 animate-fadeIn text-xs">
+                
+                {/* Header Banner */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-fuchsia-950/40 via-purple-950/40 to-black border border-fuchsia-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1 rounded bg-fuchsia-500/20 text-fuchsia-400">
+                        <Settings className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-base font-bold text-white font-heading">
+                        Dynamic Website CMS & Brand Control
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full bg-lime-400/20 text-lime-400 font-mono text-[10px] font-bold">
+                        Live Reactive
+                      </span>
+                    </div>
+                    <p className="text-slate-400 text-[11px]">
+                      Change Gym name, Founder bio/photo, 3 Trainers, address, and contacts below. Changes apply to the entire website immediately upon saving!
+                    </p>
+                  </div>
+
+                  {/* Top Action Buttons */}
+                  <div className="flex items-center gap-2 self-end md:self-auto">
+                    <button
+                      type="button"
+                      onClick={handleResetCmsConfig}
+                      disabled={savingCms}
+                      className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors flex items-center gap-1.5 font-bold text-xs"
+                      title="Reset back to default preset"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveCmsConfig}
+                      disabled={savingCms}
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-fuchsia-500/30 hover:scale-105 transition-transform"
+                    >
+                      {savingCms ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3.5 h-3.5" /> Save Changes Live
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveCmsConfig} className="space-y-6">
+                  
+                  {/* 1. BRAND IDENTITY */}
+                  <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-white/10 pb-3 text-white font-bold font-heading text-sm">
+                      <Sparkles className="w-4 h-4 text-cyan-400" /> 1. Brand Identity & Headings
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Gym Full Name</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.GYM_NAME || ''}
+                          onChange={(e) => updateCmsField('GYM_NAME', e.target.value)}
+                          placeholder="APEX 3D Performance Gym"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Brand Short Name (Navbar / Badges)</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.GYM_SHORT_NAME || ''}
+                          onChange={(e) => updateCmsField('GYM_SHORT_NAME', e.target.value)}
+                          placeholder="APEX 3D"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Main Hero Tagline</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.TAGLINE || ''}
+                          onChange={(e) => updateCmsField('TAGLINE', e.target.value)}
+                          placeholder="Forge Elite Biomechanics in 3D Dimension"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Sub-Tagline / Banner Pill</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.SUB_TAGLINE || ''}
+                          onChange={(e) => updateCmsField('SUB_TAGLINE', e.target.value)}
+                          placeholder="Next-Gen 3D Biomechanics & AI Coaching"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. FOUNDER / OWNER DESK */}
+                  <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-white/10 pb-3 text-white font-bold font-heading text-sm">
+                      <Award className="w-4 h-4 text-lime-400" /> 2. Founder & Head Coach Details
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Founder / Owner Name</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.OWNER?.name || ''}
+                          onChange={(e) => updateCmsNested('OWNER', 'name', e.target.value)}
+                          placeholder="Amrit Dwivedi"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-lime-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Founder Designation / Role</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.OWNER?.role || ''}
+                          onChange={(e) => updateCmsNested('OWNER', 'role', e.target.value)}
+                          placeholder="Founder & Head Biomechanics Coach"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-lime-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Contact Phone (10 digits)</label>
+                        <input
+                          type="tel"
+                          value={cmsForm?.OWNER?.phone || ''}
+                          onChange={(e) => updateCmsNested('OWNER', 'phone', e.target.value)}
+                          placeholder="9971284797"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-lime-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">WhatsApp Desk Number (with Country Code)</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.OWNER?.whatsapp || ''}
+                          onChange={(e) => updateCmsNested('OWNER', 'whatsapp', e.target.value)}
+                          placeholder="919971284797"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-lime-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Email Address</label>
+                        <input
+                          type="email"
+                          value={cmsForm?.OWNER?.email || ''}
+                          onChange={(e) => updateCmsNested('OWNER', 'email', e.target.value)}
+                          placeholder="amrit@apex3dgym.in"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-lime-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-mono text-slate-400 uppercase mb-1">Founder Photo URL</label>
+                      <input
+                        type="url"
+                        value={cmsForm?.OWNER?.image || ''}
+                        onChange={(e) => updateCmsNested('OWNER', 'image', e.target.value)}
+                        placeholder="https://images.unsplash.com/photo-..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-lime-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono text-slate-400 uppercase mb-1">Founder Bio / Description</label>
+                      <textarea
+                        rows={2}
+                        value={cmsForm?.OWNER?.bio || ''}
+                        onChange={(e) => updateCmsNested('OWNER', 'bio', e.target.value)}
+                        placeholder="National Biomechanics Specialist & Elite Strength Athlete with 10+ years transforming bodies..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-lime-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. THREE FEATURED TRAINERS */}
+                  <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2 text-white font-bold font-heading text-sm">
+                        <Users className="w-4 h-4 text-purple-400" /> 3. Three Featured Personal Trainers
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Shown in Owner/Trainer Section & Booking Modals
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {[0, 1, 2].map((idx) => {
+                        const tr = cmsForm?.TRAINERS?.[idx] || {};
+                        return (
+                          <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                            <div className="flex items-center justify-between font-bold text-xs text-purple-300">
+                              <span>Trainer #{idx + 1}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">{tr.rating || '4.9 ★'}</span>
+                            </div>
+
+                            <div>
+                              <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Trainer Name</label>
+                              <input
+                                type="text"
+                                value={tr.name || ''}
+                                onChange={(e) => updateTrainerField(idx, 'name', e.target.value)}
+                                placeholder={`Trainer ${idx + 1}`}
+                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:border-purple-400"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Role / Title</label>
+                              <input
+                                type="text"
+                                value={tr.role || ''}
+                                onChange={(e) => updateTrainerField(idx, 'role', e.target.value)}
+                                placeholder="Elite Hypertrophy Coach"
+                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:border-purple-400"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Specialty</label>
+                              <input
+                                type="text"
+                                value={tr.specialty || ''}
+                                onChange={(e) => updateTrainerField(idx, 'specialty', e.target.value)}
+                                placeholder="Powerlifting & Bodybuilding"
+                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:border-purple-400"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Experience</label>
+                                <input
+                                  type="text"
+                                  value={tr.experience || ''}
+                                  onChange={(e) => updateTrainerField(idx, 'experience', e.target.value)}
+                                  placeholder="7+ Years"
+                                  className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:border-purple-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Rating</label>
+                                <input
+                                  type="text"
+                                  value={tr.rating || ''}
+                                  onChange={(e) => updateTrainerField(idx, 'rating', e.target.value)}
+                                  placeholder="4.9 ★"
+                                  className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:border-purple-400"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Photo Image URL</label>
+                              <input
+                                type="url"
+                                value={tr.image || ''}
+                                onChange={(e) => updateTrainerField(idx, 'image', e.target.value)}
+                                placeholder="https://images.unsplash.com/photo-..."
+                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-white text-[11px] focus:border-purple-400"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 4. LOCATION & OPERATING HOURS */}
+                  <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-white/10 pb-3 text-white font-bold font-heading text-sm">
+                      <MapPin className="w-4 h-4 text-emerald-400" /> 4. Physical Location, Google Maps & Timings
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Full Gym Address</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.LOCATION?.address || ''}
+                          onChange={(e) => updateCmsNested('LOCATION', 'address', e.target.value)}
+                          placeholder="Plot 14, Sector 12 Dwarka, Near Metro Station, New Delhi - 110078"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Area / Landmark</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.LOCATION?.area || ''}
+                          onChange={(e) => updateCmsNested('LOCATION', 'area', e.target.value)}
+                          placeholder="Dwarka Sector 12"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">City / Region</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.LOCATION?.city || ''}
+                          onChange={(e) => updateCmsNested('LOCATION', 'city', e.target.value)}
+                          placeholder="New Delhi"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Operating Hours</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.LOCATION?.hours || ''}
+                          onChange={(e) => updateCmsNested('LOCATION', 'hours', e.target.value)}
+                          placeholder="Monday - Sunday: 05:30 AM - 11:00 PM"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Google Maps Direct Navigation Link</label>
+                        <input
+                          type="url"
+                          value={cmsForm?.LOCATION?.googleMapsDirectUrl || ''}
+                          onChange={(e) => updateCmsNested('LOCATION', 'googleMapsDirectUrl', e.target.value)}
+                          placeholder="https://maps.google.com/..."
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Google Maps Embed iframe URL</label>
+                        <input
+                          type="url"
+                          value={cmsForm?.LOCATION?.embedMapUrl || ''}
+                          onChange={(e) => updateCmsNested('LOCATION', 'embedMapUrl', e.target.value)}
+                          placeholder="https://www.google.com/maps/embed?..."
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5. SOCIAL MEDIA LINKS */}
+                  <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-white/10 pb-3 text-white font-bold font-heading text-sm">
+                      <Globe className="w-4 h-4 text-cyan-400" /> 5. Social Media Handles & Channels
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Instagram Link</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.SOCIALS?.instagram || ''}
+                          onChange={(e) => updateCmsNested('SOCIALS', 'instagram', e.target.value)}
+                          placeholder="https://instagram.com/apex3dgym"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">Facebook Link</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.SOCIALS?.facebook || ''}
+                          onChange={(e) => updateCmsNested('SOCIALS', 'facebook', e.target.value)}
+                          placeholder="https://facebook.com/apex3dgym"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-slate-400 uppercase mb-1">YouTube Link</label>
+                        <input
+                          type="text"
+                          value={cmsForm?.SOCIALS?.youtube || ''}
+                          onChange={(e) => updateCmsNested('SOCIALS', 'youtube', e.target.value)}
+                          placeholder="https://youtube.com/@apex3dgym"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Save Action Bar */}
+                  <div className="p-4 rounded-2xl bg-black/80 border border-fuchsia-500/30 flex items-center justify-between sticky bottom-2 backdrop-blur-xl">
+                    <p className="text-slate-400 text-xs">
+                      Changes persist to MongoDB Atlas & update all visitors instantly.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleResetCmsConfig}
+                        disabled={savingCms}
+                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold"
+                      >
+                        Reset Defaults
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savingCms}
+                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 text-white font-extrabold uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-fuchsia-500/30 hover:scale-105 transition-transform"
+                      >
+                        {savingCms ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" /> Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4" /> Save & Update Entire Website Live
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                </form>
+
+              </div>
+            )}
+
           </div>
         )}
 
@@ -847,10 +1377,12 @@ export default function AdminPortalModal({ onClose }) {
                       onChange={(e) => setNewMemberCoach(e.target.value)}
                       className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-white"
                     >
-                      <option value="Amrit Dwivedi">Amrit Dwivedi (Master Coach)</option>
-                      <option value="Trainer 1">Trainer 1 (Strength)</option>
-                      <option value="Trainer 2">Trainer 2 (Fat Loss)</option>
-                      <option value="Trainer 3">Trainer 3 (Calisthenics)</option>
+                      {cmsForm?.OWNER?.name && (
+                        <option value={cmsForm.OWNER.name}>{cmsForm.OWNER.name} (Founder / Head Coach)</option>
+                      )}
+                      {cmsForm?.TRAINERS?.map((t, idx) => (
+                        <option key={idx} value={t.name}>{t.name} ({t.role || `Trainer ${idx + 1}`})</option>
+                      ))}
                     </select>
                   </div>
                 </div>

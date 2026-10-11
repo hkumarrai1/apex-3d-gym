@@ -1,13 +1,15 @@
 import React from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import { X, Phone, MessageSquare, MapPin, Clock, Banknote, ShieldCheck, Check } from 'lucide-react';
 
 export default function PaymentModal({ plan, onClose }) {
+  const { config } = useGymConfig();
   if (!plan) return null;
 
-  const paymentContactPhone = "9971284797";
+  const c = config || {};
+  const paymentContactPhone = c.OWNER?.phone || "9971284797";
   const whatsappUrl = `https://wa.me/91${paymentContactPhone}?text=${encodeURIComponent(
-    `Hi! I want to join ${GYM_CONFIG.GYM_NAME} with the "${plan.name}" (${plan.price}${plan.period}). Please provide details on how to pay via Cash or UPI at the front desk.`
+    `Hi! I want to join ${c.GYM_NAME || 'the gym'} with the "${plan.name}" (${plan.price}${plan.period}). Please provide details on how to pay via Cash or UPI at the front desk.`
   )}`;
 
   return (
@@ -75,11 +77,11 @@ export default function PaymentModal({ plan, onClose }) {
         <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2 text-xs text-slate-300">
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-            <span>{GYM_CONFIG.LOCATION.address}</span>
+            <span>{c.LOCATION?.address}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-lime-400 shrink-0" />
-            <span>Front Desk Hours: {GYM_CONFIG.LOCATION.hours}</span>
+            <span>Front Desk Hours: {c.LOCATION?.hours}</span>
           </div>
         </div>
 

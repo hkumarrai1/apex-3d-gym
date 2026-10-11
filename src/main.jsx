@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { GymConfigProvider } from './context/GymConfigContext';
 
 class GlobalErrorBoundary extends React.Component {
   constructor(props) {
@@ -38,6 +39,8 @@ class GlobalErrorBoundary extends React.Component {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <GlobalErrorBoundary>
-    <App />
+    <GymConfigProvider>
+      <App />
+    </GymConfigProvider>
   </GlobalErrorBoundary>
 );

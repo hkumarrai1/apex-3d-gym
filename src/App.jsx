@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GYM_CONFIG } from './config/gymConfig';
+import { useGymConfig } from './context/GymConfigContext';
 import Navbar from './components/Navbar';
 import Hero3DCanvas from './components/Hero3DCanvas';
 import GymEquipment3D from './components/GymEquipment3D';
@@ -25,6 +25,11 @@ import AdminPortalModal from './components/AdminPortalModal';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default function App() {
+  const { config } = useGymConfig();
+  const c = config || {};
+  const owner = c.OWNER || {};
+  const loc = c.LOCATION || {};
+
   const [darkMode, setDarkMode] = useState(true);
   const [user, setUser] = useState(null);
 
@@ -73,19 +78,19 @@ export default function App() {
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left z-10">
               
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono tracking-widest uppercase">
-                <Sparkles className="w-4 h-4 animate-spin-slow" /> {GYM_CONFIG.SUB_TAGLINE}
+                <Sparkles className="w-4 h-4 animate-spin-slow" /> {c.SUB_TAGLINE || 'Ultimate 3D Gym'}
               </div>
 
               {/* Main Headline */}
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold font-heading tracking-tight leading-[1.05]">
-                {GYM_CONFIG.TAGLINE.split('in 3D')[0]} <br />
+                {(c.TAGLINE || 'Peak Human Biomechanics in 3D').split('in 3D')[0]} <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-lime-400 glow-text-cyan">
                   in 3D Dimension
                 </span>
               </h1>
 
               <p className="text-slate-400 text-base sm:text-lg max-w-2xl leading-relaxed mx-auto lg:mx-0">
-                Welcome to <strong className="text-white">{GYM_CONFIG.GYM_NAME}</strong> in New Delhi. Step into an immersive fitness experience featuring military-grade biomechanical weights, Gemini AI adaptive single-muscle rep tracking, and 1-on-1 personal coaching with founder Amrit Dwivedi.
+                Welcome to <strong className="text-white">{c.GYM_NAME || 'APEX 3D Gym'}</strong> in {loc.city || 'New Delhi'}. Step into an immersive fitness experience featuring military-grade biomechanical weights, Gemini AI adaptive single-muscle rep tracking, and 1-on-1 personal coaching with founder {owner.name || 'our founder'}.
               </p>
 
               {/* CTA Action Buttons */}

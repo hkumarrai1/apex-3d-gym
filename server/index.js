@@ -21,6 +21,7 @@ import { fileURLToPath } from 'url';
 import { User } from './models/User.js';
 import { Booking } from './models/Booking.js';
 import { TrialPass } from './models/TrialPass.js';
+import { GymSettings } from './models/GymSettings.js';
 
 // Services
 import { generateDynamicWorkoutWithGemini } from './services/geminiService.js';
@@ -84,6 +85,178 @@ app.get('/api/health', (req, res) => {
     adminConfigured: !!creds.username,
     timestamp: new Date()
   });
+});
+
+// Default Fallback Gym Configuration
+const DEFAULT_GYM_CONFIG = {
+  key: 'main_gym_config',
+  GYM_NAME: 'APEX 3D ATHLETICS & PERFORMANCE',
+  GYM_SHORT_NAME: 'APEX 3D',
+  TAGLINE: 'Transform Your Body in 3D Dimension',
+  SUB_TAGLINE: "New Delhi's Premier AI-Powered 3D Smart Gym & Elite Fitness Center",
+  LOCATION: {
+    city: 'New Delhi',
+    address: 'Dwarka Sector 12, Main Ring Road, New Delhi - 110075, India',
+    googleMapsDirectUrl: 'https://maps.app.goo.gl/WX2LfU52egpWxYfr8',
+    embedMapUrl: 'https://maps.google.com/maps?q=28.61614192367146,77.08783089985045&z=15&output=embed',
+    hours: 'Mon - Sat: 5:30 AM - 10:30 PM | Sunday: 7:00 AM - 8:00 PM'
+  },
+  OWNER: {
+    name: 'Amrit Dwivedi',
+    role: 'Founder & Master Fitness Coach',
+    phone: '8889990012',
+    whatsapp: '918889990012',
+    email: 'contact@apex3dgym.com',
+    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    bio: 'Head Fitness Strategist with 10+ years of specialized experience in hyper-trophy, body recomposition, and elite athletic conditioning.',
+    certifications: ['IFBB Pro Conditioning', 'CSCS Certified', 'AI Nutrition Specialist']
+  },
+  TRAINERS: [
+    {
+      id: 'trainer-1',
+      name: 'Trainer 1',
+      role: 'Senior Strength & Conditioning Specialist',
+      specialty: 'Powerlifting & Hypertrophy',
+      experience: '8+ Years',
+      phone: '8889990012',
+      photo: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&q=80&w=600',
+      rating: 4.9,
+      sessionsCompleted: 1420
+    },
+    {
+      id: 'trainer-2',
+      name: 'Trainer 2',
+      role: 'Body Recomposition & Fat Loss Expert',
+      specialty: 'High-Intensity Interval Training & Diet',
+      experience: '6+ Years',
+      phone: '8889990012',
+      photo: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&q=80&w=600',
+      rating: 4.85,
+      sessionsCompleted: 1100
+    },
+    {
+      id: 'trainer-3',
+      name: 'Trainer 3',
+      role: 'Calisthenics & Functional Mobility Coach',
+      specialty: 'Core Strength, Mobility & Endurance',
+      experience: '5+ Years',
+      phone: '8889990012',
+      photo: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&q=80&w=600',
+      rating: 4.92,
+      sessionsCompleted: 980
+    }
+  ],
+  MEMBERSHIP_PLANS: [
+    {
+      id: 'plan-monthly',
+      name: 'Starter Monthly Pass',
+      price: '₹1,999',
+      period: '/ month',
+      popular: false,
+      features: [
+        'Full 3D Smart Gym Floor Access',
+        'Locker Room & Steam Bath',
+        'Basic AI Workout Plan',
+        '1 Free Personal Trainer Session'
+      ]
+    },
+    {
+      id: 'plan-quarterly',
+      name: 'Pro Performance 3-Month',
+      price: '₹4,999',
+      period: '/ 3 months',
+      popular: true,
+      features: [
+        'Full Gym & Cardio Floor Access',
+        'Unlimited Steam & Recovery Sauna',
+        'Customized AI Workout & Nutrition Generator',
+        '3 Personal Trainer Sessions',
+        'Monthly InBody 3D Composition Scan'
+      ]
+    },
+    {
+      id: 'plan-annual',
+      name: 'VIP Elite Annual Pass',
+      price: '₹14,999',
+      period: '/ year',
+      popular: false,
+      features: [
+        'Priority 24/7 Access',
+        'Dedicated Personal Locker',
+        'Weekly 1-on-1 Coach Check-ins with Amrit',
+        'Unlimited AI Diet & Workout Updates',
+        'Free Gym Shaker & T-Shirt Kit',
+        'Guest Passes (2 per month)'
+      ]
+    }
+  ],
+  PAYMENT_PHONE: '9971284797',
+  INSTA_HANDLE: '@apex3d_gym_delhi'
+};
+
+let currentMemoryConfig = { ...DEFAULT_GYM_CONFIG };
+
+// Public API: Fetch Live Site Configuration
+app.get('/api/config', async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      let doc = await GymSettings.findOne({ key: 'main_gym_config' });
+      if (!doc) {
+        doc = new GymSettings(DEFAULT_GYM_CONFIG);
+        await doc.save();
+      }
+      return res.json({ success: true, config: doc });
+    }
+    return res.json({ success: true, config: currentMemoryConfig });
+  } catch (error) {
+    console.error('[CONFIG FETCH ERROR]:', error.message);
+    res.json({ success: true, config: currentMemoryConfig });
+  }
+});
+
+// Admin API: Update Site CMS Configuration
+app.post('/api/admin/config', async (req, res) => {
+  try {
+    const newConfig = req.body;
+    if (!newConfig || typeof newConfig !== 'object') {
+      return res.status(400).json({ success: false, message: 'Invalid configuration payload.' });
+    }
+
+    currentMemoryConfig = { ...currentMemoryConfig, ...newConfig, key: 'main_gym_config' };
+
+    if (isMongoConnected) {
+      const updated = await GymSettings.findOneAndUpdate(
+        { key: 'main_gym_config' },
+        { $set: newConfig },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      console.log(`[CMS LOG] ✅ Dynamic website branding updated in MongoDB Atlas!`);
+      return res.json({ success: true, message: 'Website configuration updated successfully in Atlas!', config: updated });
+    }
+
+    console.log(`[CMS LOG] ✅ Dynamic website branding updated in memory!`);
+    return res.json({ success: true, message: 'Website configuration updated in memory!', config: currentMemoryConfig });
+  } catch (error) {
+    console.error('[CONFIG UPDATE ERROR]:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to update configuration.' });
+  }
+});
+
+// Admin API: Reset Site CMS Configuration
+app.post('/api/admin/config/reset', async (req, res) => {
+  try {
+    currentMemoryConfig = { ...DEFAULT_GYM_CONFIG };
+    if (isMongoConnected) {
+      await GymSettings.findOneAndUpdate(
+        { key: 'main_gym_config' },
+        { $set: DEFAULT_GYM_CONFIG },
+        { upsert: true, new: true }
+      );
+    }
+    res.json({ success: true, message: 'Configuration reset to defaults!', config: DEFAULT_GYM_CONFIG });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // ==============================================================================

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import { Dumbbell, Sun, Moon, User, Sparkles, Menu, X, Shield, Activity } from 'lucide-react';
 
 export default function Navbar({
@@ -11,6 +11,7 @@ export default function Navbar({
   onOpenAdmin,
   user
 }) {
+  const { config } = useGymConfig();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
@@ -36,10 +37,10 @@ export default function Navbar({
           </div>
           <div>
             <span className="text-xl font-extrabold font-heading text-white tracking-wider block leading-none">
-              {GYM_CONFIG.GYM_SHORT_NAME}
+              {config.GYM_SHORT_NAME}
             </span>
             <span className="text-[10px] font-mono text-cyan-400 tracking-widest block uppercase mt-0.5">
-              {GYM_CONFIG.LOCATION.city} HQ
+              {config.LOCATION?.city || 'New Delhi'} HQ
             </span>
           </div>
         </a>

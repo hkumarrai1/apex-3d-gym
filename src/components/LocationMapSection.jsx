@@ -1,9 +1,12 @@
 import React from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import { MapPin, Navigation, Clock, Phone, ExternalLink, Compass } from 'lucide-react';
 
 export default function LocationMapSection() {
-  const location = GYM_CONFIG.LOCATION;
+  const { config } = useGymConfig();
+  const c = config || {};
+  const location = c.LOCATION || {};
+  const owner = c.OWNER || {};
 
   return (
     <section id="location" className="py-20 relative">
@@ -32,7 +35,7 @@ export default function LocationMapSection() {
               {/* Gym Name & City */}
               <div>
                 <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest">{location.city} HQ</span>
-                <h3 className="text-2xl font-extrabold text-white font-heading mt-1">{GYM_CONFIG.GYM_NAME}</h3>
+                <h3 className="text-2xl font-extrabold text-white font-heading mt-1">{c.GYM_NAME}</h3>
               </div>
 
               {/* Address */}
@@ -43,7 +46,7 @@ export default function LocationMapSection() {
                 <div>
                   <h4 className="text-white font-semibold text-sm">Gym Address</h4>
                   <p className="text-slate-300 text-sm mt-0.5 leading-relaxed">{location.address}</p>
-                  <p className="text-xs font-mono text-cyan-400 mt-1">GPS: {location.coordinates.lat}, {location.coordinates.lng}</p>
+                  <p className="text-xs font-mono text-cyan-400 mt-1">GPS: {location.coordinates?.lat}, {location.coordinates?.lng}</p>
                 </div>
               </div>
 
@@ -65,8 +68,8 @@ export default function LocationMapSection() {
                 </div>
                 <div>
                   <h4 className="text-white font-semibold text-sm">Direct Contact Desk</h4>
-                  <a href={`tel:${GYM_CONFIG.OWNER.phone}`} className="text-cyan-400 font-mono text-sm hover:underline">
-                    +91 {GYM_CONFIG.OWNER.phone} (Amrit Dwivedi)
+                  <a href={`tel:${owner.phone}`} className="text-cyan-400 font-mono text-sm hover:underline">
+                    +91 {owner.phone} ({owner.name})
                   </a>
                 </div>
               </div>

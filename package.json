@@ -8,8 +8,8 @@
     "server": "node server/index.js",
     "fullstack": "node server/index.js & vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "export-db": "node scripts/export-db.js"
   },
   "dependencies": {
     "@react-three/drei": "^9.121.0",

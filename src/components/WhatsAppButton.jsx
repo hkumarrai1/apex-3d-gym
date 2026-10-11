@@ -1,13 +1,16 @@
 import React from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import { MessageSquare } from 'lucide-react';
 
 export default function WhatsAppButton() {
-  const phone = GYM_CONFIG.OWNER.whatsapp;
-  const gymName = GYM_CONFIG.GYM_NAME;
+  const { config } = useGymConfig();
+  const c = config || {};
+  const owner = c.OWNER || {};
+  const phone = owner.whatsapp || "919971284797";
+  const gymName = c.GYM_NAME || "APEX 3D Gym";
 
   const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
-    `Hi ${GYM_CONFIG.OWNER.name}! I am interested in joining ${gymName} in New Delhi. Please send me membership details and free trial booking info.`
+    `Hi ${owner.name || 'Team'}! I am interested in joining ${gymName}. Please send me membership details and free trial booking info.`
   )}`;
 
   return (

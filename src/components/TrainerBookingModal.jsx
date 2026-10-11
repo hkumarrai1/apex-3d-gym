@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { GYM_CONFIG } from '../config/gymConfig';
+import { useGymConfig } from '../context/GymConfigContext';
 import { X, Calendar, Clock, User, CheckCircle2, Dumbbell } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function TrainerBookingModal({ trainer, onClose }) {
-  const [selectedTrainer, setSelectedTrainer] = useState(trainer ? trainer.name : GYM_CONFIG.OWNER.name);
+  const { config } = useGymConfig();
+  const c = config || {};
+  const owner = c.OWNER || {};
+  const trainers = c.TRAINERS || [];
+
+  const [selectedTrainer, setSelectedTrainer] = useState(trainer ? trainer.name : (owner.name || 'Founder'));
   const [date, setDate] = useState('');
   const [time, setTime] = useState('08:00 AM');
   const [goal, setGoal] = useState('Hypertrophy & Form Check');
@@ -12,8 +17,8 @@ export default function TrainerBookingModal({ trainer, onClose }) {
   const [confirmed, setConfirmed] = useState(false);
 
   const trainersList = [
-    { name: GYM_CONFIG.OWNER.name, role: GYM_CONFIG.OWNER.role },
-    ...GYM_CONFIG.TRAINERS.map(t => ({ name: t.name, role: t.role }))
+    { name: owner.name, role: owner.role },
+    ...trainers.map(t => ({ name: t.name, role: t.role }))
   ];
 
   const handleBooking = async (e) => {
@@ -29,7 +34,7 @@ export default function TrainerBookingModal({ trainer, onClose }) {
           date,
           time,
           goal,
-          userPhone: GYM_CONFIG.OWNER.phone
+          userPhone: owner.phone
         })
       });
     } catch(err) {
@@ -61,7 +66,7 @@ export default function TrainerBookingModal({ trainer, onClose }) {
                 1-on-1 Personal Training Session
               </span>
               <h3 className="text-2xl font-bold text-white font-heading mt-3">Book Your Fitness Session</h3>
-              <p className="text-xs text-slate-400 mt-1">Schedule a live coaching session at {GYM_CONFIG.GYM_SHORT_NAME} New Delhi</p>
+              <p className="text-xs text-slate-400 mt-1">Schedule a live coaching session at {c.GYM_SHORT_NAME || 'APEX 3D'} {c.LOCATION?.city || 'HQ'}</p>
             </div>
 
             <form onSubmit={handleBooking} className="space-y-4">
