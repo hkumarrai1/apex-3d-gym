@@ -28,7 +28,9 @@ import {
   MapPin,
   Globe,
   Award,
-  Image
+  Image,
+  CreditCard,
+  Tag
 } from 'lucide-react';
 
 export default function AdminPortalModal({ onClose }) {
@@ -324,6 +326,41 @@ export default function AdminPortalModal({ onClose }) {
     });
   };
 
+  const updatePlanField = (index, field, value) => {
+    setCmsForm(prev => {
+      const plans = [...(prev?.MEMBERSHIP_PLANS || [])];
+      if (!plans[index]) plans[index] = {};
+      plans[index] = { ...plans[index], [field]: value };
+      return { ...prev, MEMBERSHIP_PLANS: plans };
+    });
+  };
+
+  const updatePlanFeatures = (index, featuresString) => {
+    setCmsForm(prev => {
+      const plans = [...(prev?.MEMBERSHIP_PLANS || [])];
+      if (!plans[index]) plans[index] = {};
+      const features = featuresString.split('\n').filter(f => f.trim().length > 0);
+      plans[index] = { ...plans[index], features };
+      return { ...prev, MEMBERSHIP_PLANS: plans };
+    });
+  };
+
+  const handleQuickSavePrices = async () => {
+    setSavingCms(true);
+    try {
+      const res = await updateConfig(cmsForm);
+      if (res && res.success) {
+        alert("✅ Membership pricing updated live across the entire website!");
+      } else {
+        alert("⚠️ Failed to update prices: " + (res?.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert("Error saving prices: " + err.message);
+    } finally {
+      setSavingCms(false);
+    }
+  };
+
   const handleSaveCmsConfig = async (e) => {
     if (e) e.preventDefault();
     setSavingCms(true);
@@ -562,10 +599,90 @@ export default function AdminPortalModal({ onClose }) {
               </button>
             </div>
 
-            {/* TAB 1: MEMBERS DIRECTORY */}
+            {/* TAB 1: MEMBERS DIRECTORY & DASHBOARD */}
             {activeTab === 'members' && (
-              <div className="space-y-4">
-                
+              <div className="space-y-6">
+
+                {/* LIVE MEMBERSHIP PRICING CONTROL ON DASHBOARD */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-cyan-950/30 to-black border border-cyan-500/30 shadow-xl space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold shadow-md shadow-cyan-500/10">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-white font-heading">
+                            Live Membership Pricing Control
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full bg-lime-400/20 text-lime-400 font-mono text-[9px] font-bold">
+                            Live Reactive
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          Change plan prices & billing cycles directly here. Updates reflect live across the entire website instantly.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleQuickSavePrices}
+                      disabled={savingCms}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-lime-400 text-black font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 hover:scale-105 transition-transform shrink-0 self-start sm:self-auto"
+                    >
+                      {savingCms ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3.5 h-3.5" /> Save Pricing Live
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* 3 Quick Editable Pricing Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                    {(cmsForm?.MEMBERSHIP_PLANS || []).map((plan, idx) => (
+                      <div key={plan.id || idx} className="p-3.5 rounded-xl bg-black/60 border border-white/10 space-y-2 hover:border-cyan-500/40 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-white truncate">{plan.name}</span>
+                          {plan.popular && (
+                            <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-400 text-black">
+                              POPULAR
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-mono text-slate-400 uppercase">Price</label>
+                            <input
+                              type="text"
+                              value={plan.price || ''}
+                              onChange={(e) => updatePlanField(idx, 'price', e.target.value)}
+                              placeholder="₹1,999"
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-lime-400 font-bold font-mono focus:border-cyan-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-mono text-slate-400 uppercase">Billing Period</label>
+                            <input
+                              type="text"
+                              value={plan.period || ''}
+                              onChange={(e) => updatePlanField(idx, 'period', e.target.value)}
+                              placeholder="/ month"
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 font-mono focus:border-cyan-400"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Search & Filter Controls */}
                 <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
                   <div className="relative w-full sm:w-80">
@@ -1235,6 +1352,84 @@ export default function AdminPortalModal({ onClose }) {
                     </div>
                   </div>
 
+                  {/* 6. MEMBERSHIP PLANS & PRICING MANAGER */}
+                  <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2 text-white font-bold font-heading text-sm">
+                        <CreditCard className="w-4 h-4 text-lime-400" /> 6. Membership Plans & Pricing Manager
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Shown in Pricing Cards & Payment Checkout Desk
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {(cmsForm?.MEMBERSHIP_PLANS || []).map((plan, idx) => (
+                        <div key={plan.id || idx} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                          <div className="flex items-center justify-between font-bold text-xs text-lime-400">
+                            <span>Plan #{idx + 1}</span>
+                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-slate-300 font-mono">
+                              <input
+                                type="checkbox"
+                                checked={!!plan.popular}
+                                onChange={(e) => updatePlanField(idx, 'popular', e.target.checked)}
+                                className="w-3.5 h-3.5 accent-cyan-400 cursor-pointer"
+                              />
+                              <span>Most Popular Badge</span>
+                            </label>
+                          </div>
+
+                          <div>
+                            <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Plan Title / Name</label>
+                            <input
+                              type="text"
+                              value={plan.name || ''}
+                              onChange={(e) => updatePlanField(idx, 'name', e.target.value)}
+                              placeholder="Pro Performance 3-Month"
+                              className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:border-lime-400 font-bold"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Price (with Currency)</label>
+                              <input
+                                type="text"
+                                value={plan.price || ''}
+                                onChange={(e) => updatePlanField(idx, 'price', e.target.value)}
+                                placeholder="₹4,999"
+                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-lime-400 font-mono font-bold focus:border-lime-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">Billing Period</label>
+                              <input
+                                type="text"
+                                value={plan.period || ''}
+                                onChange={(e) => updatePlanField(idx, 'period', e.target.value)}
+                                placeholder="/ 3 months"
+                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:border-lime-400"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block font-mono text-slate-400 text-[10px] uppercase mb-1">
+                              Plan Features (1 per line)
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={Array.isArray(plan.features) ? plan.features.join('\n') : (plan.features || '')}
+                              onChange={(e) => updatePlanFeatures(idx, e.target.value)}
+                              placeholder={"Full Gym Floor Access\nSteam & Recovery Sauna\nAI Nutrition Generator"}
+                              className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-white text-[11px] font-sans leading-relaxed focus:border-lime-400"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Bottom Save Action Bar */}
                   <div className="p-4 rounded-2xl bg-black/80 border border-fuchsia-500/30 flex items-center justify-between sticky bottom-2 backdrop-blur-xl">
                     <p className="text-slate-400 text-xs">
@@ -1365,9 +1560,9 @@ export default function AdminPortalModal({ onClose }) {
                       onChange={(e) => setNewMemberPlan(e.target.value)}
                       className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-white"
                     >
-                      <option value="Starter Monthly Pass">Starter Monthly Pass</option>
-                      <option value="Pro Performance 3-Month">Pro Performance 3-Month</option>
-                      <option value="VIP Elite Annual Pass">VIP Elite Annual Pass</option>
+                      {(cmsForm?.MEMBERSHIP_PLANS || []).map((pl, idx) => (
+                        <option key={idx} value={pl.name}>{pl.name} ({pl.price})</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -1472,9 +1667,9 @@ export default function AdminPortalModal({ onClose }) {
                     onChange={(e) => setEditPlan(e.target.value)}
                     className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-white"
                   >
-                    <option value="Starter Monthly Pass">Starter Monthly Pass</option>
-                    <option value="Pro Performance 3-Month">Pro Performance 3-Month</option>
-                    <option value="VIP Elite Annual Pass">VIP Elite Annual Pass</option>
+                    {(cmsForm?.MEMBERSHIP_PLANS || []).map((pl, idx) => (
+                      <option key={idx} value={pl.name}>{pl.name} ({pl.price})</option>
+                    ))}
                   </select>
                 </div>
 

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { useGymConfig } from '../context/GymConfigContext';
 import { GYM_CONFIG } from '../config/gymConfig';
 import PaymentModal from './PaymentModal';
 import { Check, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 
 export default function MembershipPlans() {
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const { config } = useGymConfig();
 
-  const plans = GYM_CONFIG.MEMBERSHIP_PLANS;
+  const plans = config?.MEMBERSHIP_PLANS?.length ? config.MEMBERSHIP_PLANS : GYM_CONFIG.MEMBERSHIP_PLANS;
 
   return (
     <section id="pricing" className="py-20 relative">
